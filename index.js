@@ -217,6 +217,26 @@ app.post("/category/delete", async (req, res) => {
   }
 });
 
+app.post("/product/create", async (req, res) => {
+  try {
+    // Notre sauvegarde
+    const product = new Product({
+      title: req.body.title,
+      description: req.body.description,
+      price: req.body.price,
+      category: req.body.category
+    });
+
+    await product.save();
+
+    res.json(product);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message
+    });
+  }
+});
+
 app.listen(3000, () => {
   console.log("Server started");
 });
