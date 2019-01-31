@@ -10,31 +10,6 @@ mongoose.connect(
   { useNewUrlParser: true }
 );
 
-const Department = mongoose.model("Department", {
-  title: {
-    type: String,
-    minlength: 3,
-    maxlength: 20,
-    required: true
-  }
-});
-
-const Category = mongoose.model("Category", {
-  title: {
-    type: String,
-    minlength: 5,
-    maxlength: 15,
-    required: true
-  },
-  description: {
-    type: String
-  },
-  department: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Department"
-  }
-});
-
 const Product = mongoose.model("Product", {
   title: {
     type: String,
@@ -130,6 +105,9 @@ app.post("/department/delete", async (req, res) => {
       // Version 2
       await categories.remove();
 
+      // TODO
+      // Delete categories
+
       res.json({ message: "Department removed" });
     } else {
       res.status(400).json({
@@ -204,6 +182,8 @@ app.post("/category/delete", async (req, res) => {
     const category = await Category.findById(req.query.id);
     if (category) {
       await category.remove();
+      // TODO
+      // Delete products
       res.json({ message: "Category removed" });
     } else {
       res.status(400).json({
@@ -230,6 +210,110 @@ app.post("/product/create", async (req, res) => {
     await product.save();
 
     res.json(product);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message
+    });
+  }
+});
+
+const createFilters = req => {
+  const filters = {};
+
+  if (req.query.priceMin) {
+    filters.price = {};
+    filters.price.$gte = req.query.priceMin;
+  }
+  if (req.query.priceMax) {
+    if (filters.price === undefined) {
+      filters.price = {};
+    }
+
+    filters.price.$lte = req.query.priceMax;
+  }
+
+  if (req.query.category) {
+    filters.category = req.query.category;
+  }
+
+  if (req.query.title) {
+    filters.title = new RegExp(req.query.title, "i");
+  }
+
+  return filters;
+};
+
+app.get("/product", async (req, res) => {
+  try {
+    //  axios.get("http://google.fr").then((response) => {
+    //   console.log(response.data);
+    // });
+
+    // const response = await axios.get("http://google.fr")
+    // console.log(response.data);
+    const filters = createFilters(req);
+
+    // Ici, nous construisons notre recherche
+    const search = Product.find(filters);
+
+    if (req.query.sort === "price-asc") {
+      // Ici, nous continuons de construire notre recherche
+      search.sort({ price: 1 });
+    } else if (req.query.sort === "price-desc") {
+      // Ici, nous continuons de construire notre recherche
+      search.sort({ price: -1 });
+    }
+
+    // if (req.query.priceMin) {
+    //   // ...
+    // }
+
+    // Ici, nous executons la recherche
+    const products = await search;
+
+    res.json(products);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message
+    });
+  }
+});
+
+app.post("/product/update", async (req, res) => {
+  try {
+    const product = await Product.findById(req.query.id);
+    // Est-ce que le produit existe ?
+    if (product) {
+      product.title = req.body.title;
+      product.description = req.body.description;
+      product.price = req.body.price;
+      product.category = req.body.category;
+
+      await product.save();
+      res.json(product);
+    } else {
+      res.status(400).json({
+        message: "Product not found"
+      });
+    }
+  } catch (error) {
+    res.status(400).json({
+      message: error.message
+    });
+  }
+});
+
+app.post("/product/delete", async (req, res) => {
+  try {
+    const product = await Product.findById(req.query.id);
+    if (product) {
+      await product.remove();
+      res.json({ message: "Product removed" });
+    } else {
+      res.status(400).json({
+        message: "Product not found"
+      });
+    }
   } catch (error) {
     res.status(400).json({
       message: error.message
