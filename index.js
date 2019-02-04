@@ -5,7 +5,9 @@ const mongoose = require("mongoose");
 
 app.use(bodyParser.json());
 
-mongoose.connect("mongodb://localhost:27017/shop", { useNewUrlParser: true });
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/shop", {
+  useNewUrlParser: true
+});
 
 // Initialiser les collections
 // Mongoose va prendre connaissance de ces collections
@@ -25,6 +27,6 @@ app.use(categoryRoutes);
 app.use(productRoutes);
 app.use(reviewRoutes);
 
-app.listen(3000, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log("Server started");
 });
