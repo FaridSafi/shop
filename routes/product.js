@@ -62,9 +62,13 @@ router.get("/product", async (req, res) => {
     const filters = createFilters(req);
 
     // Ici, nous construisons notre recherche
-    const search = Product.find(filters);
+    const search = Product.find(filters).populate("reviews");
 
-    if (req.query.sort === "price-asc") {
+    if (req.query.sort === "rating-asc") {
+      search.sort({ averageRating: 1 });
+    } else if (req.query.sort === "rating-desc") {
+      search.sort({ averageRating: -1 });
+    } else if (req.query.sort === "price-asc") {
       // Ici, nous continuons de construire notre recherche
       search.sort({ price: 1 });
     } else if (req.query.sort === "price-desc") {
@@ -72,9 +76,15 @@ router.get("/product", async (req, res) => {
       search.sort({ price: -1 });
     }
 
-    // if (req.query.priceMin) {
-    //   // ...
-    // }
+    // Si la page est précisée
+    if (req.query.page) {
+      const page = req.query.page;
+      const limit = 2; // 2 résultats par page
+
+      search.limit(limit); // Limit à X résultats
+      search.skip(limit * (page - 1)); // Ignorer X résultats
+      // skip doit etre à 0 pour la premiere page
+    }
 
     // Ici, nous executons la recherche
     const products = await search;
